@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# raspi-prepare
+#
+# Copyright (c) 2015 Yoshiyuki Koyanagi <moutend@gmail.com>
+# raspi-prepare is licensed under the terms of the MIT license.
+# See moutend.mit-license.org
+
+source ./src/command.sh
+
+run "ssh-keygen -t ecdsa -b 521 -f $HOME/.ssh/id_ecdsa.rpi"
+run "bash ./src/setup-local-ssh.sh $RPI_USER $RPI_ADDR"
+run "echo 'mkdir \$HOME/.ssh' | ssh $RPI_USER@$RPI_ADDR sh"
+run "cat $HOME/.ssh/id_ecdsa.rpi.pub | ssh $RPI_USER@$RPI_ADDR tee -a '\$HOME/.ssh/authorized_keys'"
+run "cat ./src/setup-remote-root-fs.sh | ssh $RPI_USER@$RPI_ADDR sudo sh"
+run "cat ./src/setup-remote-ssh.sh | ssh $RPI_USER@$RPI_ADDR sh"
+run "ssh $RPI_USER@$RPI_ADDR 'sudo reboot'; bash ./src/wait.sh $?"
+run "ssh rpi 'sudo /etc/init.d/ssh restart'"
+
+info "Successfully done all tasks."
