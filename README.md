@@ -16,18 +16,18 @@ Currently, it does the following tasks:
 
 
 
-# Usage
+## Usage
 
 On your PC:
 
-   git clone https://github.com/moutend/raspi-prepare.git
-   cd ./raspi-prepar
-   ./raspi-prepare RPI_ADDR
+    git clone https://github.com/moutend/raspi-prepare.git
+    cd ./raspi-prepar
+    ./raspi-prepare RPI_ADDR
 
 `RPI_ADDR` is an IP address assigned to Raspberry Pi.
 
 
 
-# LICENSE
+## LICENSE
 
 MIT
