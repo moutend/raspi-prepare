@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
 # raspi-prepare
 #
@@ -6,15 +6,87 @@
 # raspi-prepare is licensed under the terms of the MIT license.
 # See moutend.mit-license.org
 
-source ./src/command.sh
+require 'optparse'
 
-run "ssh-keygen -t ecdsa -b 521 -f $HOME/.ssh/id_ecdsa.rpi"
-run "bash ./src/setup-local-ssh.sh $RPI_USER $RPI_ADDR"
-run "echo 'mkdir \$HOME/.ssh' | ssh $RPI_USER@$RPI_ADDR sh"
-run "cat $HOME/.ssh/id_ecdsa.rpi.pub | ssh $RPI_USER@$RPI_ADDR tee -a '\$HOME/.ssh/authorized_keys'"
-run "cat ./src/setup-remote-root-fs.sh | ssh $RPI_USER@$RPI_ADDR sudo sh"
-run "cat ./src/setup-remote-ssh.sh | ssh $RPI_USER@$RPI_ADDR sh"
-run "ssh $RPI_USER@$RPI_ADDR 'sudo reboot'; bash ./src/wait.sh $?"
-run "ssh rpi 'sudo /etc/init.d/ssh restart'"
+run =
+-> commands {
+  status = {:ok => 0, :error => 0}
 
-info "Successfully done all tasks."
+  options = {}
+  OptionParser.new do |opts|
+    opts.banner = "Usage: raspi-prepare [OPTION]\n\n"
+
+    choices = {
+      "rpi_addr" => [
+        "-a=RPI_ADDR",
+        "Specify an IP address assigned to Raspberry Pi."
+      ],
+      "dry_run" => [
+        "-n",
+        "--dry-run",
+        "Do nothing actually."
+      ],
+      "force" => [
+        "--force",
+        "Ignore errors and run the commands."
+      ]
+    }
+
+    choices.each_pair do |key, value|
+      opts.on *value do |v|
+        options[key] = v
+      end
+    end
+  end.parse!
+
+  rpi_addr = options["rpi_addr"] || "192.168.2.2"
+  dry_run  = options["dry_run"] || options["dry-run"]
+  force    = options["force"]
+
+  commands.each_with_index do |command, n|
+    command.gsub! /\$RPI_ADDR/, rpi_addr
+    puts "Step #{n}: #{command}"
+
+    if dry_run
+      system "echo Step #{n}: Doing nothing."
+    else
+      system command
+    end
+
+    if $?.exitstatus > 0
+      status[:error] += 1
+      puts "Step #{n}: #{$?}.\n\n"
+    else
+      status[:ok] += 1
+      puts "Step #{n}: Done.\n\n"
+    end
+
+    if (not force) && $?.exitstatus > 0
+      break
+    end
+  end
+
+  puts "status = #{status}"
+
+  if status[:error] == 0
+    puts "🍺  Successfully done all tasks!"
+  else
+    puts "🍺  Let's take a break!"
+  end
+}
+
+commands = [
+  "ssh-keygen -t ecdsa -b 521 -f $HOME/.ssh/id_ecdsa.rpi",
+  "bash ./src/setup-local-ssh.sh pi $RPI_ADDR",
+  "echo '[ -d \$HOME/.ssh ] || mkdir \$HOME/.ssh' | ssh pi@$RPI_ADDR sh",
+  "cat $HOME/.ssh/id_ecdsa.rpi.pub | ssh pi@$RPI_ADDR tee -a '\$HOME/.ssh/authorized_keys'",
+  "ssh pi@$RPI_ADDR 'sudo raspi-config --expand-rootfs'",
+  "cat ./src/setup-remote-ssh.sh | ssh pi@$RPI_ADDR sh",
+  "ssh pi@$RPI_ADDR 'sudo reboot'",
+]
+
+trap "SIGINT" do
+  exit
+end
+
+run [commands]
