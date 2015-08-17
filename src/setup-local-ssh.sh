@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 echo "Adding the following settings into $HOME/.ssh/config:\n"
 if grep --quiet "^Host rpi" ~/.ssh/config 2> /dev/null

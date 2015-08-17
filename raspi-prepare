@@ -75,18 +75,14 @@ run =
   end
 }
 
-commands = [
-  "ssh-keygen -t ecdsa -b 521 -f $HOME/.ssh/id_ecdsa.rpi",
-  "bash ./src/setup-local-ssh.sh pi $RPI_ADDR",
-  "echo '[ -d \$HOME/.ssh ] || mkdir \$HOME/.ssh' | ssh pi@$RPI_ADDR sh",
-  "cat $HOME/.ssh/id_ecdsa.rpi.pub | ssh pi@$RPI_ADDR tee -a '\$HOME/.ssh/authorized_keys'",
-  "ssh pi@$RPI_ADDR 'sudo raspi-config --expand-rootfs'",
-  "cat ./src/setup-remote-ssh.sh | ssh pi@$RPI_ADDR sh",
-  "ssh pi@$RPI_ADDR 'sudo reboot'",
-]
+trap "SIGINT" do exit end
 
-trap "SIGINT" do
-  exit
+commands = []
+
+File.open('./src/commands.sh').each do |v|
+  if v.match(/^[^#].*/) && v != "\n"
+   commands.push v
+  end
 end
 
-run [commands]
+run[commands]
