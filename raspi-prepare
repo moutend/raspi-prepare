@@ -1,12 +1,26 @@
 #!/bin/bash
 
+
 RPI_USER="pi"
 RPI_ADDR="192.168.2.2"
 TIME_STAMP=`ruby -e 'puts (Time.now.to_f * 1000000).to_i'`
 
+if [ ! "$1" == "" ]
+then
+  RPI_USER=$1
+fi
+
+if [ ! "$2" == "" ]
+then
+  RPI_ADDR=$2
+fi
+
+echo "Info:	RPI_USER=$RPI_USER"
+echo "Info:	RPI_ADDR=$RPI_ADDR"
+
 if [ -e $HOME/.ssh/config ]
 then
-  echo "Info:	Copy backup"
+  echo "Info:	Create backup"
   cp $HOME/.ssh/config $HOME/.ssh/config.backup
   echo "Info:	Rename old settings"
   sed  -i buffer_string "s/rpi\.[0-9]*$/rpi.$TIME_STAMP/"  $HOME/.ssh/config.backup
