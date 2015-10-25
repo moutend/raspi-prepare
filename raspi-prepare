@@ -1,88 +1,38 @@
-#!/usr/bin/env ruby
+#!/bin/bash
 
-# raspi-prepare
-#
-# Copyright (c) 2015 Yoshiyuki Koyanagi <moutend@gmail.com>
-# raspi-prepare is licensed under the terms of the MIT license.
-# See moutend.mit-license.org
+RPI_USER="pi"
+RPI_ADDR="192.168.2.2"
+TIME_STAMP=`ruby -e 'puts (Time.now.to_f * 1000000).to_i'`
 
-require 'optparse'
+if [ -e $HOME/.ssh/config ]
+then
+  echo "Info:	Copy backup"
+  cp $HOME/.ssh/config $HOME/.ssh/config.backup
+  echo "Info:	Rename old settings"
+  sed  -i buffer_string "s/rpi\.[0-9]*$/rpi.$TIME_STAMP/"  $HOME/.ssh/config.backup
+else
+  echo "Info:	Add the following settings into $HOME/.ssh/config"
+  cat <<EOF | tee -a $HOME/.ssh/config.backup
+Host rpi
+    HostName        $RPI_ADDR
+    IdentityFile    $HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP
+    User            $RPI_USER
+EOF
+fi
 
-run =
--> commands {
-  status = {:ok => 0, :error => 0}
+echo "Info:	Creating new key pair"
+ssh-keygen -t ecdsa -b 521 -f "$HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP"
 
-  options = {}
-  OptionParser.new do |opts|
-    opts.banner = "Usage: raspi-prepare [OPTION]\n\n"
+echo "Info:	On RPI, Create \$HOME/.ssh dir if not exists"
+echo '[ -d $HOME/.ssh ] || mkdir $HOME/.ssh' | ssh rpi sh
 
-    choices = {
-      "rpi_addr" => [
-        "-a=RPI_ADDR",
-        "Specify an IP address assigned to Raspberry Pi."
-      ],
-      "dry_run" => [
-        "-n",
-        "--dry-run",
-        "Do nothing actually."
-      ],
-      "force" => [
-        "--force",
-        "Ignore errors and run the commands."
-      ]
-    }
+echo "Info:	Add pub key into RPI"
+cat $HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP.pub | ssh rpi tee -a '$HOME/.ssh/authorized_keys'
 
-    choices.each_pair do |key, value|
-      opts.on *value do |v|
-        options[key] = v
-      end
-    end
-  end.parse!
+echo "Info:	Expand root file system"
+cat ./expand_rootfs.sh | ssh rpi sudo sh
 
-  rpi_addr = options["rpi_addr"] || "192.168.2.2"
-  dry_run  = options["dry_run"] || options["dry-run"]
-  force    = options["force"]
+echo "Info:	Apply changes"
+cp $HOME/.ssh/config.backup $HOME/.ssh/config
 
-  commands.each_with_index do |command, n|
-    command.gsub! /\$RPI_ADDR/, rpi_addr
-    puts "Step #{n}: #{command}"
-
-    if dry_run
-      system "echo Step #{n}: Doing nothing."
-    else
-      system command
-    end
-
-    if $?.exitstatus > 0
-      status[:error] += 1
-      puts "Step #{n}: #{$?}.\n\n"
-    else
-      status[:ok] += 1
-      puts "Step #{n}: Done.\n\n"
-    end
-
-    if (not force) && $?.exitstatus > 0
-      break
-    end
-  end
-
-  puts "status = #{status}"
-
-  if status[:error] == 0
-    puts "🍺  Successfully done all tasks!"
-  else
-    puts "🍺  Let's take a break!"
-  end
-}
-
-trap "SIGINT" do exit end
-
-commands = []
-
-File.open('./src/commands.sh').each do |v|
-  if v.match(/^[^#].*/) && v != "\n"
-   commands.push v
-  end
-end
-
-run[commands]
+echo "🍺  Successfully done!"
