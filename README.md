@@ -1,34 +1,29 @@
-raspi-prepare
-==============
+# raspi-prepare
+[![MIT License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](http://moutend.mit-license.org/)
 
-`raspi-prepare` is the tool to configure SSH
-and run `raspi-config` without GUI.
+`raspi-prepare` is small bash-script for configuring
+SSH connection to your Raspberry Pi and run `raspi-config` without GUI.
 Currently, it does the following tasks:
 
-* Prepare SSH
-  * Disable password authentication, root login and PAM.
-  * Enable public key authentication.
-* raspi-config
-  * Expand root file system
-  * Disable raspi-conf at boot
+* Disable password authentication, root login and PAM.
+* Enable public key authentication.
+* Expand root file system
+* Disable raspi-conf at boot
 
-It targets RASPBIAN and similar OS..
+It targets RASPBIAN and similar OS.
 
 
 
-## Usage
+# Quick start
 
-On your PC:
+On your PC, please run:
 
-    git clone https://github.com/moutend/raspi-prepare.git
-    cd ./raspi-prepar
-    ./raspi-prepare -a RPI_ADDR
+    % bash -c "$(curl -fsSSL https://raw.githubusercontent.com/moutend/raspi-prepare/master/raspi-prepare)"
 
-`RPI_ADDR` is an IP address assigned to Raspberry Pi.
 If you not specified, `192.168.2.2` will be used as default IP address.
 
 
 
-## LICENSE
+# LICENSE
 
 MIT
