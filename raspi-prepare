@@ -5,6 +5,14 @@ trap 'exit' INT
 RPI_USER="pi"
 RPI_ADDR="192.168.2.2"
 
+if [ "$1" == "-h" ]
+then
+  echo "usage: raspi-prepare [RPI_USER] [RPI_ADDR]"
+  echo "	default RPI_USER=pi"
+  echo "	default RPI_ADDR=192.168.2.2"
+  exit 0
+fi
+
 if [ ! "$1" == "" ]
 then
   RPI_USER=$1
