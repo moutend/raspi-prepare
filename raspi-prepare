@@ -24,11 +24,11 @@ then
 fi
 
 
-TIME_STAMP=`ruby -e 'puts (Time.now.to_f * 1000000).to_i'`
+TIMESTAMP=`ruby -e 'puts (Time.now.to_f * 1000000).to_i'`
 
 echo "Info:	RPI_USER=$RPI_USER"
 echo "Info:	RPI_ADDR=$RPI_ADDR"
-echo "Info:	TIME_STAMP=$TIME_STAMP"
+echo "Info:	TIMESTAMP=$TIMESTAMP"
 
 if [ -e $HOME/.ssh/config ]
 then
@@ -36,25 +36,25 @@ then
   cp $HOME/.ssh/config $HOME/.ssh/config.backup
 
   echo "Info:	Apply changes to the backup"
-  sed  -i buffer_string "s/rpi\.[0-9]*$/rpi.$TIME_STAMP/"  $HOME/.ssh/config.backup
+  sed  -i buffer_string "s/rpi\.[0-9]*$/rpi.$TIMESTAMP/"  $HOME/.ssh/config.backup
 else
   echo "Info:	Add the following settings into $HOME/.ssh/config"
   cat <<EOF | tee -a $HOME/.ssh/config.backup
 Host rpi
     HostName        $RPI_ADDR
-    IdentityFile    $HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP
+    IdentityFile    $HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP
     User            $RPI_USER
 EOF
 fi
 
 echo "Info:	Create new key pair"
-ssh-keygen -t ecdsa -b 521 -f "$HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP"
+ssh-keygen -t ecdsa -b 521 -f "$HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP"
 
 echo "Info:	Create /home/$RPI_USER/.ssh if not exists"
 echo '[ -d $HOME/.ssh ] || mkdir $HOME/.ssh' | ssh rpi sh
 
 echo "Info:	Add the pub key to /home/$RPI_USER/.ssh/authorized_keys"
-cat $HOME/.ssh/id_ecdsa.rpi.$TIME_STAMP.pub | ssh rpi tee -a '$HOME/.ssh/authorized_keys'
+cat $HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP.pub | ssh rpi tee -a '$HOME/.ssh/authorized_keys'
 
 echo "Info:	Expand root file system"
 cat ./expand_rootfs.sh | ssh rpi sudo sh
