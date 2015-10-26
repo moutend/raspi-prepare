@@ -18,7 +18,9 @@ It targets RASPBIAN and similar OS.
 
 On your PC, please run:
 
-    % bash -c "$(curl -fsSSL https://raw.githubusercontent.com/moutend/raspi-prepare/master/raspi-prepare)"
+    % git clone https://github.com/moutend/raspi-prepare.git
+    % cd ./raspi-prepare
+    % ./raspi-prepare pi 192.168.1.123
 
 If you not specified, `192.168.2.2` will be used as default IP address.
 
