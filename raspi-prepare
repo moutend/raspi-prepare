@@ -5,9 +5,9 @@ trap 'exit' INT
 RPI_USER="pi"
 RPI_ADDR="192.168.2.2"
 
-if [ "$1" == "-h" ]
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]
 then
-  echo "usage: raspi-prepare [RPI_USER] [RPI_ADDR]"
+  echo "usage: raspi-prepare [RPI_USER RPI_ADDR]"
   echo "	default RPI_USER=pi"
   echo "	default RPI_ADDR=192.168.2.2"
   exit 0
@@ -23,7 +23,6 @@ then
   RPI_ADDR=$2
 fi
 
-
 TIMESTAMP=`ruby -e 'puts (Time.now.to_f * 1000000).to_i'`
 
 echo "Info:	RPI_USER=$RPI_USER"
@@ -36,7 +35,7 @@ then
   cp $HOME/.ssh/config $HOME/.ssh/config.backup
 
   echo "Info:	Apply changes to the backup"
-  sed  -i buffer_string "s/rpi\.[0-9]*$/rpi.$TIMESTAMP/"  $HOME/.ssh/config.backup
+  sed  -i ".buffer" "s/rpi\.[0-9]*$/rpi.$TIMESTAMP/"  $HOME/.ssh/config.backup
 else
   echo "Info:	Add the following settings into $HOME/.ssh/config"
   cat <<EOF | tee -a $HOME/.ssh/config.backup
@@ -50,14 +49,21 @@ fi
 echo "Info:	Create new key pair"
 ssh-keygen -t ecdsa -b 521 -f "$HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP"
 
+if [ -e $HOME/.ssh/config ] || [ "$1" == "-f" ]
+then
+  RPI_HOST=rpi
+else
+  RPI_HOST="$RPI_USER@$RPI_ADDR"
+fi
+
 echo "Info:	Create /home/$RPI_USER/.ssh if not exists"
-echo '[ -d $HOME/.ssh ] || mkdir $HOME/.ssh' | ssh rpi sh
+echo '[ -d $HOME/.ssh ] || mkdir $HOME/.ssh' | ssh $RPI_HOST sh
 
 echo "Info:	Add the pub key to /home/$RPI_USER/.ssh/authorized_keys"
-cat $HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP.pub | ssh rpi tee -a '$HOME/.ssh/authorized_keys'
+cat $HOME/.ssh/id_ecdsa.rpi.$TIMESTAMP.pub | ssh $RPI_HOST tee -a '$HOME/.ssh/authorized_keys'
 
 echo "Info:	Expand root file system"
-cat ./expand_rootfs.sh | ssh rpi sudo sh
+cat ./expand_rootfs.sh | ssh $RPI_HOST sudo sh
 
 echo "Info:	Apply changes from the backup"
 cp $HOME/.ssh/config.backup $HOME/.ssh/config
